@@ -386,7 +386,7 @@ blocks:
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
-    num_items: '9'
+    num_items: '13'
     type: byte
     vlen: '1'
   states:
@@ -519,7 +519,7 @@ blocks:
     bus_structure: null
     coordinate: [2328, 468.0]
     rotation: 0
-    state: bypassed
+    state: enabled
 - name: digital_diff_encoder_bb_0
   id: digital_diff_encoder_bb
   parameters:
@@ -536,7 +536,7 @@ blocks:
     bus_structure: null
     coordinate: [536, 148.0]
     rotation: 0
-    state: bypassed
+    state: enabled
 - name: digital_pfb_clock_sync_xxx_0
   id: digital_pfb_clock_sync_xxx
   parameters:

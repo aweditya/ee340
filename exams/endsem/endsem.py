@@ -85,8 +85,8 @@ class endsem(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
         self.rational_resampler_xxx_0_0_0 = filter.rational_resampler_fff(
-                interpolation=44100,
-                decimation=quad_rate,
+                interpolation=1,
+                decimation=int(quad_rate/samp_rate),
                 taps=[],
                 fractional_bw=0)
         self.rational_resampler_xxx_0_0 = filter.rational_resampler_fff(
@@ -94,13 +94,22 @@ class endsem(gr.top_block, Qt.QWidget):
                 decimation=int(quad_rate/samp_rate),
                 taps=[],
                 fractional_bw=0)
+        self.low_pass_filter_0_0_0_0 = filter.interp_fir_filter_fff(
+            1,
+            firdes.low_pass(
+                1,
+                samp_rate,
+                10000,
+                1000,
+                window.WIN_HAMMING,
+                6.76))
         self.low_pass_filter_0_0_0 = filter.interp_fir_filter_fff(
             1,
             firdes.low_pass(
                 1,
                 quad_rate,
-                44100,
-                1000,
+                70000,
+                10000,
                 window.WIN_HAMMING,
                 6.76))
         self.low_pass_filter_0_0 = filter.interp_fir_filter_fff(
@@ -112,7 +121,7 @@ class endsem(gr.top_block, Qt.QWidget):
                 10000,
                 window.WIN_HAMMING,
                 6.76))
-        self.iir_filter_xxx_0 = filter.iir_filter_ffd([1], [1, -0.5], True)
+        self.iir_filter_xxx_0 = filter.iir_filter_ccf([1], [1,0,0,0,-0.5], True)
         self.digital_pfb_clock_sync_xxx_0 = digital.pfb_clock_sync_fff(sps, 2*3.14159/100, firdes.root_raised_cosine(32, 32*samp_rate, symb_rate, 0.4, 1408), 32, 16, 1.5, 1)
         self.blocks_threshold_ff_0 = blocks.threshold_ff(-50e-6, 50e-6, 0)
         self.blocks_skiphead_0 = blocks.skiphead(gr.sizeof_char*1, 7)
@@ -120,11 +129,13 @@ class endsem(gr.top_block, Qt.QWidget):
         self.blocks_multiply_xx_0_0_0 = blocks.multiply_vff(1)
         self.blocks_multiply_xx_0_0 = blocks.multiply_vff(1)
         self.blocks_float_to_uchar_0 = blocks.float_to_uchar()
+        self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
         self.blocks_file_source_0 = blocks.file_source(gr.sizeof_float*1, '/home/aditya/Projects/iitb/ee340/exams/endsem/rx.dat', False, 0, 0)
         self.blocks_file_source_0.set_begin_tag(pmt.PMT_NIL)
         self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_char*1, '/home/aditya/Projects/iitb/ee340/exams/endsem/out.txt', False)
         self.blocks_file_sink_0.set_unbuffered(False)
-        self.audio_sink_0 = audio.sink(44100, '', True)
+        self.blocks_complex_to_float_0 = blocks.complex_to_float(1)
+        self.audio_sink_0 = audio.sink(samp_rate, '', True)
         self.analog_sig_source_x_0_0_0 = analog.sig_source_f(quad_rate, analog.GR_SIN_WAVE, 500000, 2, 0, 0)
         self.analog_sig_source_x_0_0 = analog.sig_source_f(quad_rate, analog.GR_COS_WAVE, 500000, -2, 0, 0)
 
@@ -134,20 +145,24 @@ class endsem(gr.top_block, Qt.QWidget):
         ##################################################
         self.connect((self.analog_sig_source_x_0_0, 0), (self.blocks_multiply_xx_0_0, 1))
         self.connect((self.analog_sig_source_x_0_0_0, 0), (self.blocks_multiply_xx_0_0_0, 0))
+        self.connect((self.blocks_complex_to_float_0, 1), (self.digital_pfb_clock_sync_xxx_0, 0))
+        self.connect((self.blocks_complex_to_float_0, 0), (self.low_pass_filter_0_0_0_0, 0))
         self.connect((self.blocks_file_source_0, 0), (self.blocks_multiply_xx_0_0, 0))
         self.connect((self.blocks_file_source_0, 0), (self.blocks_multiply_xx_0_0_0, 1))
+        self.connect((self.blocks_float_to_complex_0, 0), (self.iir_filter_xxx_0, 0))
         self.connect((self.blocks_float_to_uchar_0, 0), (self.blocks_skiphead_0, 0))
         self.connect((self.blocks_multiply_xx_0_0, 0), (self.low_pass_filter_0_0, 0))
         self.connect((self.blocks_multiply_xx_0_0_0, 0), (self.low_pass_filter_0_0_0, 0))
         self.connect((self.blocks_pack_k_bits_bb_0, 0), (self.blocks_file_sink_0, 0))
         self.connect((self.blocks_skiphead_0, 0), (self.blocks_pack_k_bits_bb_0, 0))
         self.connect((self.blocks_threshold_ff_0, 0), (self.blocks_float_to_uchar_0, 0))
-        self.connect((self.digital_pfb_clock_sync_xxx_0, 0), (self.iir_filter_xxx_0, 0))
-        self.connect((self.iir_filter_xxx_0, 0), (self.blocks_threshold_ff_0, 0))
+        self.connect((self.digital_pfb_clock_sync_xxx_0, 0), (self.blocks_threshold_ff_0, 0))
+        self.connect((self.iir_filter_xxx_0, 0), (self.blocks_complex_to_float_0, 0))
         self.connect((self.low_pass_filter_0_0, 0), (self.rational_resampler_xxx_0_0, 0))
         self.connect((self.low_pass_filter_0_0_0, 0), (self.rational_resampler_xxx_0_0_0, 0))
-        self.connect((self.rational_resampler_xxx_0_0, 0), (self.digital_pfb_clock_sync_xxx_0, 0))
-        self.connect((self.rational_resampler_xxx_0_0_0, 0), (self.audio_sink_0, 0))
+        self.connect((self.low_pass_filter_0_0_0_0, 0), (self.audio_sink_0, 0))
+        self.connect((self.rational_resampler_xxx_0_0, 0), (self.blocks_float_to_complex_0, 1))
+        self.connect((self.rational_resampler_xxx_0_0_0, 0), (self.blocks_float_to_complex_0, 0))
 
 
     def closeEvent(self, event):
@@ -179,6 +194,7 @@ class endsem(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.digital_pfb_clock_sync_xxx_0.update_taps(firdes.root_raised_cosine(32, 32*self.samp_rate, self.symb_rate, 0.4, 1408))
+        self.low_pass_filter_0_0_0_0.set_taps(firdes.low_pass(1, self.samp_rate, 10000, 1000, window.WIN_HAMMING, 6.76))
 
     def get_quad_rate(self):
         return self.quad_rate
@@ -188,7 +204,7 @@ class endsem(gr.top_block, Qt.QWidget):
         self.analog_sig_source_x_0_0.set_sampling_freq(self.quad_rate)
         self.analog_sig_source_x_0_0_0.set_sampling_freq(self.quad_rate)
         self.low_pass_filter_0_0.set_taps(firdes.low_pass(1, self.quad_rate, 70000, 10000, window.WIN_HAMMING, 6.76))
-        self.low_pass_filter_0_0_0.set_taps(firdes.low_pass(1, self.quad_rate, 44100, 1000, window.WIN_HAMMING, 6.76))
+        self.low_pass_filter_0_0_0.set_taps(firdes.low_pass(1, self.quad_rate, 70000, 10000, window.WIN_HAMMING, 6.76))
 
 
 
